@@ -163,4 +163,7 @@ We need your help in making this SDK great. Please participate in the community 
 [s3-integration-tests]: https://github.com/aws/aws-sdk-java-v2/tree/master/services/s3/src/it/java/software/amazon/awssdk/services/s3
 
 
-<!-- GitAds-Verify: 17J2HAEKHGY2MQHD4YXCLGWPFU5GSTVQ -->
+## GitAds Sponsored
+[![Sponsored by GitAds](https://gitads.dev/v1/ad-serve?source=arnabnandy7/aws-sdk-java-v2@github)](https://gitads.dev/v1/ad-track?source=arnabnandy7/aws-sdk-java-v2@github)
+
+
