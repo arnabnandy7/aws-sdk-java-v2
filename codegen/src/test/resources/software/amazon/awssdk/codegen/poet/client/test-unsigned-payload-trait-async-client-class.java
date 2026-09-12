@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.slf4j.Logger;
@@ -57,6 +58,7 @@ import software.amazon.awssdk.protocols.json.JsonOperationMetadata;
 import software.amazon.awssdk.retries.api.RetryStrategy;
 import software.amazon.awssdk.services.database.auth.scheme.DatabaseAuthSchemeParams;
 import software.amazon.awssdk.services.database.auth.scheme.DatabaseAuthSchemeProvider;
+import software.amazon.awssdk.services.database.auth.scheme.internal.DefaultDatabaseAuthSchemeProvider;
 import software.amazon.awssdk.services.database.endpoints.DatabaseEndpointParams;
 import software.amazon.awssdk.services.database.endpoints.DatabaseEndpointProvider;
 import software.amazon.awssdk.services.database.endpoints.internal.DatabaseEndpointResolverUtils;
@@ -120,6 +122,21 @@ final class DefaultDatabaseAsyncClient implements DatabaseAsyncClient {
 
     private final SdkClientConfiguration clientConfiguration;
 
+    private final Function<String, Optional<ExceptionMetadata>> exceptionMetadataMapper = errorCode -> {
+        if (errorCode == null) {
+            return Optional.empty();
+        }
+        switch (errorCode) {
+            case "InvalidInput":
+                return Optional.of(ExceptionMetadata.builder().errorCode("InvalidInput").httpStatusCode(400)
+                                                    .exceptionBuilderSupplier(InvalidInputException::builder).build());
+            default:
+                return Optional.empty();
+        }
+    };
+
+    private final ConcurrentHashMap<String, List<AuthSchemeOption>> authSchemeCache = new ConcurrentHashMap<>();
+
     protected DefaultDatabaseAsyncClient(SdkClientConfiguration clientConfiguration) {
         this.clientHandler = new AwsAsyncClientHandler(clientConfiguration);
         this.clientConfiguration = clientConfiguration.toBuilder().option(SdkClientOption.SDK_CLIENT, this)
@@ -166,18 +183,6 @@ final class DefaultDatabaseAsyncClient implements DatabaseAsyncClient {
 
             HttpResponseHandler<DeleteRowResponse> responseHandler = protocolFactory.createResponseHandler(operationMetadata,
                                                                                                            DeleteRowResponse::builder);
-            Function<String, Optional<ExceptionMetadata>> exceptionMetadataMapper = errorCode -> {
-                if (errorCode == null) {
-                    return Optional.empty();
-                }
-                switch (errorCode) {
-                    case "InvalidInput":
-                        return Optional.of(ExceptionMetadata.builder().errorCode("InvalidInput").httpStatusCode(400)
-                                                            .exceptionBuilderSupplier(InvalidInputException::builder).build());
-                    default:
-                        return Optional.empty();
-                }
-            };
             HttpResponseHandler<AwsServiceException> errorResponseHandler = createErrorResponseHandler(protocolFactory,
                                                                                                        operationMetadata, exceptionMetadataMapper);
 
@@ -237,18 +242,6 @@ final class DefaultDatabaseAsyncClient implements DatabaseAsyncClient {
 
             HttpResponseHandler<GetRowResponse> responseHandler = protocolFactory.createResponseHandler(operationMetadata,
                                                                                                         GetRowResponse::builder);
-            Function<String, Optional<ExceptionMetadata>> exceptionMetadataMapper = errorCode -> {
-                if (errorCode == null) {
-                    return Optional.empty();
-                }
-                switch (errorCode) {
-                    case "InvalidInput":
-                        return Optional.of(ExceptionMetadata.builder().errorCode("InvalidInput").httpStatusCode(400)
-                                                            .exceptionBuilderSupplier(InvalidInputException::builder).build());
-                    default:
-                        return Optional.empty();
-                }
-            };
             HttpResponseHandler<AwsServiceException> errorResponseHandler = createErrorResponseHandler(protocolFactory,
                                                                                                        operationMetadata, exceptionMetadataMapper);
 
@@ -311,18 +304,6 @@ final class DefaultDatabaseAsyncClient implements DatabaseAsyncClient {
 
             HttpResponseHandler<OpWithSigv4AndSigv4AUnSignedPayloadResponse> responseHandler = protocolFactory
                 .createResponseHandler(operationMetadata, OpWithSigv4AndSigv4AUnSignedPayloadResponse::builder);
-            Function<String, Optional<ExceptionMetadata>> exceptionMetadataMapper = errorCode -> {
-                if (errorCode == null) {
-                    return Optional.empty();
-                }
-                switch (errorCode) {
-                    case "InvalidInput":
-                        return Optional.of(ExceptionMetadata.builder().errorCode("InvalidInput").httpStatusCode(400)
-                                                            .exceptionBuilderSupplier(InvalidInputException::builder).build());
-                    default:
-                        return Optional.empty();
-                }
-            };
             HttpResponseHandler<AwsServiceException> errorResponseHandler = createErrorResponseHandler(protocolFactory,
                                                                                                        operationMetadata, exceptionMetadataMapper);
 
@@ -388,18 +369,6 @@ final class DefaultDatabaseAsyncClient implements DatabaseAsyncClient {
 
             HttpResponseHandler<OpWithSigv4SignedPayloadResponse> responseHandler = protocolFactory.createResponseHandler(
                 operationMetadata, OpWithSigv4SignedPayloadResponse::builder);
-            Function<String, Optional<ExceptionMetadata>> exceptionMetadataMapper = errorCode -> {
-                if (errorCode == null) {
-                    return Optional.empty();
-                }
-                switch (errorCode) {
-                    case "InvalidInput":
-                        return Optional.of(ExceptionMetadata.builder().errorCode("InvalidInput").httpStatusCode(400)
-                                                            .exceptionBuilderSupplier(InvalidInputException::builder).build());
-                    default:
-                        return Optional.empty();
-                }
-            };
             HttpResponseHandler<AwsServiceException> errorResponseHandler = createErrorResponseHandler(protocolFactory,
                                                                                                        operationMetadata, exceptionMetadataMapper);
 
@@ -462,18 +431,6 @@ final class DefaultDatabaseAsyncClient implements DatabaseAsyncClient {
 
             HttpResponseHandler<OpWithSigv4UnSignedPayloadResponse> responseHandler = protocolFactory.createResponseHandler(
                 operationMetadata, OpWithSigv4UnSignedPayloadResponse::builder);
-            Function<String, Optional<ExceptionMetadata>> exceptionMetadataMapper = errorCode -> {
-                if (errorCode == null) {
-                    return Optional.empty();
-                }
-                switch (errorCode) {
-                    case "InvalidInput":
-                        return Optional.of(ExceptionMetadata.builder().errorCode("InvalidInput").httpStatusCode(400)
-                                                            .exceptionBuilderSupplier(InvalidInputException::builder).build());
-                    default:
-                        return Optional.empty();
-                }
-            };
             HttpResponseHandler<AwsServiceException> errorResponseHandler = createErrorResponseHandler(protocolFactory,
                                                                                                        operationMetadata, exceptionMetadataMapper);
 
@@ -544,18 +501,6 @@ final class DefaultDatabaseAsyncClient implements DatabaseAsyncClient {
 
             HttpResponseHandler<OpWithSigv4UnSignedPayloadAndStreamingResponse> responseHandler = protocolFactory
                 .createResponseHandler(operationMetadata, OpWithSigv4UnSignedPayloadAndStreamingResponse::builder);
-            Function<String, Optional<ExceptionMetadata>> exceptionMetadataMapper = errorCode -> {
-                if (errorCode == null) {
-                    return Optional.empty();
-                }
-                switch (errorCode) {
-                    case "InvalidInput":
-                        return Optional.of(ExceptionMetadata.builder().errorCode("InvalidInput").httpStatusCode(400)
-                                                            .exceptionBuilderSupplier(InvalidInputException::builder).build());
-                    default:
-                        return Optional.empty();
-                }
-            };
             HttpResponseHandler<AwsServiceException> errorResponseHandler = createErrorResponseHandler(protocolFactory,
                                                                                                        operationMetadata, exceptionMetadataMapper);
 
@@ -627,18 +572,6 @@ final class DefaultDatabaseAsyncClient implements DatabaseAsyncClient {
 
             HttpResponseHandler<OpWithSigv4ASignedPayloadResponse> responseHandler = protocolFactory.createResponseHandler(
                 operationMetadata, OpWithSigv4ASignedPayloadResponse::builder);
-            Function<String, Optional<ExceptionMetadata>> exceptionMetadataMapper = errorCode -> {
-                if (errorCode == null) {
-                    return Optional.empty();
-                }
-                switch (errorCode) {
-                    case "InvalidInput":
-                        return Optional.of(ExceptionMetadata.builder().errorCode("InvalidInput").httpStatusCode(400)
-                                                            .exceptionBuilderSupplier(InvalidInputException::builder).build());
-                    default:
-                        return Optional.empty();
-                }
-            };
             HttpResponseHandler<AwsServiceException> errorResponseHandler = createErrorResponseHandler(protocolFactory,
                                                                                                        operationMetadata, exceptionMetadataMapper);
 
@@ -701,18 +634,6 @@ final class DefaultDatabaseAsyncClient implements DatabaseAsyncClient {
 
             HttpResponseHandler<OpWithSigv4AUnSignedPayloadResponse> responseHandler = protocolFactory.createResponseHandler(
                 operationMetadata, OpWithSigv4AUnSignedPayloadResponse::builder);
-            Function<String, Optional<ExceptionMetadata>> exceptionMetadataMapper = errorCode -> {
-                if (errorCode == null) {
-                    return Optional.empty();
-                }
-                switch (errorCode) {
-                    case "InvalidInput":
-                        return Optional.of(ExceptionMetadata.builder().errorCode("InvalidInput").httpStatusCode(400)
-                                                            .exceptionBuilderSupplier(InvalidInputException::builder).build());
-                    default:
-                        return Optional.empty();
-                }
-            };
             HttpResponseHandler<AwsServiceException> errorResponseHandler = createErrorResponseHandler(protocolFactory,
                                                                                                        operationMetadata, exceptionMetadataMapper);
 
@@ -780,18 +701,6 @@ final class DefaultDatabaseAsyncClient implements DatabaseAsyncClient {
 
             HttpResponseHandler<OpsWithSigv4AndSigv4ASignedPayloadResponse> responseHandler = protocolFactory
                 .createResponseHandler(operationMetadata, OpsWithSigv4AndSigv4ASignedPayloadResponse::builder);
-            Function<String, Optional<ExceptionMetadata>> exceptionMetadataMapper = errorCode -> {
-                if (errorCode == null) {
-                    return Optional.empty();
-                }
-                switch (errorCode) {
-                    case "InvalidInput":
-                        return Optional.of(ExceptionMetadata.builder().errorCode("InvalidInput").httpStatusCode(400)
-                                                            .exceptionBuilderSupplier(InvalidInputException::builder).build());
-                    default:
-                        return Optional.empty();
-                }
-            };
             HttpResponseHandler<AwsServiceException> errorResponseHandler = createErrorResponseHandler(protocolFactory,
                                                                                                        operationMetadata, exceptionMetadataMapper);
 
@@ -855,18 +764,6 @@ final class DefaultDatabaseAsyncClient implements DatabaseAsyncClient {
 
             HttpResponseHandler<PutRowResponse> responseHandler = protocolFactory.createResponseHandler(operationMetadata,
                                                                                                         PutRowResponse::builder);
-            Function<String, Optional<ExceptionMetadata>> exceptionMetadataMapper = errorCode -> {
-                if (errorCode == null) {
-                    return Optional.empty();
-                }
-                switch (errorCode) {
-                    case "InvalidInput":
-                        return Optional.of(ExceptionMetadata.builder().errorCode("InvalidInput").httpStatusCode(400)
-                                                            .exceptionBuilderSupplier(InvalidInputException::builder).build());
-                    default:
-                        return Optional.empty();
-                }
-            };
             HttpResponseHandler<AwsServiceException> errorResponseHandler = createErrorResponseHandler(protocolFactory,
                                                                                                        operationMetadata, exceptionMetadataMapper);
 
@@ -929,18 +826,6 @@ final class DefaultDatabaseAsyncClient implements DatabaseAsyncClient {
 
             HttpResponseHandler<SecondOpsWithSigv4AndSigv4ASignedPayloadResponse> responseHandler = protocolFactory
                 .createResponseHandler(operationMetadata, SecondOpsWithSigv4AndSigv4ASignedPayloadResponse::builder);
-            Function<String, Optional<ExceptionMetadata>> exceptionMetadataMapper = errorCode -> {
-                if (errorCode == null) {
-                    return Optional.empty();
-                }
-                switch (errorCode) {
-                    case "InvalidInput":
-                        return Optional.of(ExceptionMetadata.builder().errorCode("InvalidInput").httpStatusCode(400)
-                                                            .exceptionBuilderSupplier(InvalidInputException::builder).build());
-                    default:
-                        return Optional.empty();
-                }
-            };
             HttpResponseHandler<AwsServiceException> errorResponseHandler = createErrorResponseHandler(protocolFactory,
                                                                                                        operationMetadata, exceptionMetadataMapper);
 
@@ -1024,6 +909,16 @@ final class DefaultDatabaseAsyncClient implements DatabaseAsyncClient {
         DatabaseAuthSchemeProvider authSchemeProvider = requestAuthSchemeProvider != null ? requestAuthSchemeProvider : Validate
             .isInstanceOf(DatabaseAuthSchemeProvider.class, executionAttributes.getAttribute(SdkInternalExecutionAttribute.AUTH_SCHEME_RESOLVER),
                           "Expected an instance of DatabaseAuthSchemeProvider");
+        boolean useCache = requestAuthSchemeProvider == null
+                && authSchemeProvider instanceof DefaultDatabaseAuthSchemeProvider;
+        String cacheKey = operationName + ":" + executionAttributes.getAttribute(AwsExecutionAttribute.AWS_REGION) + ":"
+                + executionAttributes.getAttribute(AwsExecutionAttribute.AWS_SIGV4A_SIGNING_REGION_SET);
+        if (useCache) {
+            List<AuthSchemeOption> cached = authSchemeCache.get(cacheKey);
+            if (cached != null) {
+                return cached;
+            }
+        }
         DatabaseAuthSchemeParams.Builder paramsBuilder = DatabaseAuthSchemeParams.builder().operation(operationName);
         paramsBuilder.region(executionAttributes.getAttribute(AwsExecutionAttribute.AWS_REGION));
         Set<String> sigv4aRegionSet = executionAttributes.getAttribute(AwsExecutionAttribute.AWS_SIGV4A_SIGNING_REGION_SET);
@@ -1031,6 +926,10 @@ final class DefaultDatabaseAsyncClient implements DatabaseAsyncClient {
             paramsBuilder.regionSet(RegionSet.create(sigv4aRegionSet));
         }
         List<AuthSchemeOption> options = authSchemeProvider.resolveAuthScheme(paramsBuilder.build());
+        if (useCache) {
+            options = Collections.unmodifiableList(options);
+            authSchemeCache.put(cacheKey, options);
+        }
         return options;
     }
 
